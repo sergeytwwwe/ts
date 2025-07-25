@@ -1,24 +1,5 @@
 -- Visuals functionality for Trident Survival (ESP, Chams, Bullet Trace, HitSound, Log)
-
--- Проверка и загрузка библиотеки/UI, если не переданы из main.lua
-local Library, EspBox, WorldBox
-if not _G.TridentSurvivalUI then
-    Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
-    local Window = Library:CreateWindow({
-        Title = "Trident Survival Visuals",
-        Footer = "ESP UI Example",
-        Center = true,
-        AutoShow = true,
-        ToggleKeybind = Enum.KeyCode.RightControl,
-    })
-    local VisualTab = Window:AddTab("Visual", "eye", "ESP Visuals Features")
-    EspBox = VisualTab:AddLeftGroupbox("ESP", "box")
-    WorldBox = VisualTab:AddRightGroupbox("World", "globe")
-else
-    Library = _G.TridentSurvivalUI.Library
-    EspBox = _G.TridentSurvivalUI.EspBox
-    WorldBox = _G.TridentSurvivalUI.WorldBox
-end
+-- Assumes Library, EspBox, and WorldBox are defined from trident_survival_main.lua
 
 local espSettings = {
     enabled = false,
@@ -221,20 +202,6 @@ WorldBox:AddDropdown("LogTypes", {
         logSettings.types = {}
         for k, v in pairs(val) do
             logSettings.types[k] = v
-        end
-    end
-})
-
-WorldBox:AddToggle("testNotification", {
-    Text = "Test Notification",
-    Default = false,
-    Callback = function(val)
-        if val then
-            Library:Notify({
-                Title = "Test Notification",
-                Description = "Это тестовое уведомление! Всё работает.",
-                Time = 4,
-            })
         end
     end
 })
@@ -539,19 +506,44 @@ local function CreateEsp(char)
     esp.Distance.Center = true
     esp.Distance.Outline = true
     esp.Distance.Visible = false
+
+    -- === FIX LAGS: Disconnect logic and update only when needed ===
+    local lastUpdate = 0
+    local lastUpdatePos = Vector3.new()
+    local wasVisible = false
+
     activeEsp[char] = esp
-    esp._conn = runservice.RenderStepped:Connect(function()
+    esp._conn = runservice.RenderStepped:Connect(function(dt)
         if not char or not char.Parent or not char:FindFirstChild("HumanoidRootPart") then
             esp._conn:Disconnect()
             removeEspFor(char, esp)
             activeEsp[char] = nil
             return
         end
+
         local hrp = char.HumanoidRootPart
         local dist = (camera.CFrame.Position - hrp.Position).Magnitude
-        if not espSettings.enabled or dist > espSettings.maxDistance
-        or (espSettings.aicheck and GetPlayerName(char) == "Shylou2644")
-        or (espSettings.sleepcheck and SleepCheck(char)) then
+
+        local isVisible = espSettings.enabled and dist <= espSettings.maxDistance
+        and (not espSettings.aicheck or GetPlayerName(char) ~= "Shylou2644")
+        and (not espSettings.sleepcheck or not SleepCheck(char))
+
+        -- LAG FIX: Don't update if not visible (hide and return)
+        if not isVisible then
+            if wasVisible then
+                esp.Box.Visible = false
+                for _, f in ipairs(esp.Corners) do f.Visible = false end
+                esp.Name.Visible = false
+                esp.Weapon.Visible = false
+                esp.Distance.Visible = false
+                wasVisible = false
+            end
+            return
+        end
+        wasVisible = true
+
+        local left, top, right, bottom, boxW, boxH = WorldToBox(char)
+        if not left then
             esp.Box.Visible = false
             for _, f in ipairs(esp.Corners) do f.Visible = false end
             esp.Name.Visible = false
@@ -559,8 +551,6 @@ local function CreateEsp(char)
             esp.Distance.Visible = false
             return
         end
-        local left, top, right, bottom, boxW, boxH = WorldToBox(char)
-        if not left then return end
         local centerX = left + boxW / 2
 
         if espSettings.box then
@@ -601,15 +591,44 @@ local function CreateEsp(char)
             for _, f in ipairs(esp.Corners) do f.Visible = false end
         end
 
+        -- === DISTANCE AND WEAPON COMPACT FIX ===
+        -- Draw Weapon and Distance next to each other, NOT under each other:
         local spacing = 1
         local textHeightName = esp.Name.Size
-        local textHeightWeap = esp.Weapon.Size
-        local textHeightDist = esp.Distance.Size
-
         local nameY = top - textHeightName - spacing
-        local weapY = bottom + spacing
-        local distY = weapY + textHeightWeap + spacing
 
+        -- Both weapon & distance on the same line, weapon left, distance right
+        local weapText = espSettings.weapon and (GetWeaponNameSolara(char) or "None") or ""
+        local distText = espSettings.distance and string.format("%dm", math.floor(dist)) or ""
+        local showWeap = espSettings.weapon
+        local showDist = espSettings.distance
+
+        local baseY = bottom + spacing
+        local wTextSize = #weapText > 0 and Drawing.GetTextBounds(weapText, esp.Weapon.Size) or Vector2.new(0,0)
+        local dTextSize = #distText > 0 and Drawing.GetTextBounds(distText, esp.Distance.Size) or Vector2.new(0,0)
+        local totalWidth = wTextSize.X + dTextSize.X + (showWeap and showDist and 10 or 0)
+
+        -- Weapon
+        if showWeap then
+            esp.Weapon.Visible = true
+            esp.Weapon.Text = weapText
+            esp.Weapon.Position = Vector2.new(centerX - totalWidth/2 + wTextSize.X/2, baseY)
+            esp.Weapon.Color = espSettings.weaponColor
+        else
+            esp.Weapon.Visible = false
+        end
+
+        -- Distance
+        if showDist then
+            esp.Distance.Visible = true
+            esp.Distance.Text = distText
+            esp.Distance.Position = Vector2.new(centerX + totalWidth/2 - dTextSize.X/2, baseY)
+            esp.Distance.Color = espSettings.distanceColor
+        else
+            esp.Distance.Visible = false
+        end
+
+        -- Name
         if espSettings.name then
             esp.Name.Visible = true
             local realName = GetPlayerName(char)
@@ -618,25 +637,6 @@ local function CreateEsp(char)
             esp.Name.Color = espSettings.nameColor
         else
             esp.Name.Visible = false
-        end
-
-        if espSettings.weapon then
-            esp.Weapon.Visible = true
-            local weap = GetWeaponNameSolara(char)
-            esp.Weapon.Text = weap and tostring(weap) or "None"
-            esp.Weapon.Position = Vector2.new(centerX, weapY)
-            esp.Weapon.Color = espSettings.weaponColor
-        else
-            esp.Weapon.Visible = false
-        end
-
-        if espSettings.distance then
-            esp.Distance.Visible = true
-            esp.Distance.Text = string.format("%dm", math.floor(dist))
-            esp.Distance.Position = Vector2.new(centerX, distY)
-            esp.Distance.Color = espSettings.distanceColor
-        else
-            esp.Distance.Visible = false
         end
     end)
 end
@@ -829,10 +829,3 @@ Library:OnUnload(function()
         originalHitSoundIds[name] = nil
     end
 end)
-
--- Save UI objects to global for potential reuse
-_G.TridentSurvivalUI = {
-    Library = Library,
-    EspBox = EspBox,
-    WorldBox = WorldBox
-}
