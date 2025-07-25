@@ -1,5 +1,5 @@
--- Visuals functionality for Trident Survival (ESP, Chams, Bullet Trace, HitSound, Log)
--- Assumes Library, EspBox, and WorldBox are defined from trident_survival_main.lua
+local Library = getgenv().TridentLibrary
+local VisualTab = getgenv().TridentVisualTab
 
 local espSettings = {
     enabled = false,
@@ -42,12 +42,14 @@ local hitSoundSettings = {
     soundType = "Rust"
 }
 
-EspBox:AddToggle("espEnabled", {
+-- === UI элементы ===
+
+VisualTab:AddToggle("espEnabled", {
     Text = "Enabled",
     Default = false,
     Callback = function(val) espSettings.enabled = val end
 })
-EspBox:AddToggle("espBox", {
+VisualTab:AddToggle("espBox", {
     Text = "Box",
     Default = false,
     Callback = function(val) espSettings.box = val end
@@ -58,14 +60,14 @@ EspBox:AddToggle("espBox", {
         Callback = function(val) espSettings.boxColor = val end
     })
 
-EspBox:AddDropdown("espBoxType", {
+VisualTab:AddDropdown("espBoxType", {
     Values = {"Default", "Corner"},
     Default = 1,
     Text = "Box Type",
     Callback = function(val) espSettings.boxtype = val end
 })
 
-EspBox:AddToggle("espName", {
+VisualTab:AddToggle("espName", {
     Text = "Name",
     Default = false,
     Callback = function(val) espSettings.name = val end
@@ -76,7 +78,7 @@ EspBox:AddToggle("espName", {
         Callback = function(val) espSettings.nameColor = val end
     })
 
-EspBox:AddToggle("espWeapon", {
+VisualTab:AddToggle("espWeapon", {
     Text = "Weapon",
     Default = false,
     Callback = function(val) espSettings.weapon = val end
@@ -87,7 +89,7 @@ EspBox:AddToggle("espWeapon", {
         Callback = function(val) espSettings.weaponColor = val end
     })
 
-EspBox:AddToggle("espDistance", {
+VisualTab:AddToggle("espDistance", {
     Text = "Show Distance",
     Default = false,
     Callback = function(val) espSettings.distance = val end
@@ -98,7 +100,7 @@ EspBox:AddToggle("espDistance", {
         Callback = function(val) espSettings.distanceColor = val end
     })
 
-EspBox:AddSlider("espMaxDistance", {
+VisualTab:AddSlider("espMaxDistance", {
     Text = "Max Distance",
     Default = 5000,
     Min = 1,
@@ -107,19 +109,19 @@ EspBox:AddSlider("espMaxDistance", {
     Callback = function(val) espSettings.maxDistance = val end
 })
 
-EspBox:AddToggle("espSleep", {
+VisualTab:AddToggle("espSleep", {
     Text = "Sleep Check",
     Default = false,
     Callback = function(val) espSettings.sleepcheck = val end
 })
 
-EspBox:AddToggle("espAICheck", {
+VisualTab:AddToggle("espAICheck", {
     Text = "AI Check",
     Default = false,
     Callback = function(val) espSettings.aicheck = val end
 })
 
-WorldBox:AddToggle("HandChams", {
+VisualTab:AddToggle("HandChams", {
     Text = "Hand Chams",
     Default = false,
     Callback = function(val) chamsSettings.hand = val end
@@ -130,14 +132,14 @@ WorldBox:AddToggle("HandChams", {
         Callback = function(val) chamsSettings.handColor = val end
     })
 
-WorldBox:AddDropdown("HandChamsMat", {
+VisualTab:AddDropdown("HandChamsMat", {
     Values = {"ForceField", "Neon"},
     Default = "ForceField",
     Text = "Hand Material",
     Callback = function(val) chamsSettings.handMat = val end
 })
 
-WorldBox:AddToggle("ItemChams", {
+VisualTab:AddToggle("ItemChams", {
     Text = "Item Chams",
     Default = false,
     Callback = function(val) chamsSettings.item = val end
@@ -148,14 +150,14 @@ WorldBox:AddToggle("ItemChams", {
         Callback = function(val) chamsSettings.itemColor = val end
     })
 
-WorldBox:AddDropdown("ItemChamsMat", {
+VisualTab:AddDropdown("ItemChamsMat", {
     Values = {"ForceField", "Neon"},
     Default = "ForceField",
     Text = "Item Material",
     Callback = function(val) chamsSettings.itemMat = val end
 })
 
-WorldBox:AddToggle("BulletTrace", {
+VisualTab:AddToggle("BulletTrace", {
     Text = "Bullet Trace",
     Default = false,
     Callback = function(val) traceSettings.enabled = val end
@@ -166,26 +168,26 @@ WorldBox:AddToggle("BulletTrace", {
         Callback = function(val) traceSettings.color = val end
     })
 
-WorldBox:AddDropdown("BulletTraceMode", {
+VisualTab:AddDropdown("BulletTraceMode", {
     Values = {"Legit", "Neon"},
     Default = "Legit",
     Text = "Bullet Trace Mode",
     Callback = function(val) traceSettings.mode = val end
 })
 
-WorldBox:AddToggle("HitSound", {
+VisualTab:AddToggle("HitSound", {
     Text = "Hit sound",
     Default = false,
     Callback = function(val) hitSoundSettings.enabled = val end
 })
-WorldBox:AddDropdown("HitSoundType", {
+VisualTab:AddDropdown("HitSoundType", {
     Values = {"Rust"},
     Default = "Rust",
     Text = "Hit sound type",
     Callback = function(val) hitSoundSettings.soundType = val end
 })
 
-WorldBox:AddToggle("Log", {
+VisualTab:AddToggle("Log", {
     Text = "Log",
     Default = false,
     Callback = function(val) logSettings.enabled = val
@@ -193,7 +195,7 @@ WorldBox:AddToggle("Log", {
     end
 })
 
-WorldBox:AddDropdown("LogTypes", {
+VisualTab:AddDropdown("LogTypes", {
     Values = {"Kill log", "Hit log"},
     Multi = true,
     Default = {"Kill log", "Hit log"},
