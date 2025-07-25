@@ -1,5 +1,25 @@
 -- Visuals functionality for Trident Survival (ESP, Chams, Bullet Trace, HitSound, Log)
 
+-- Проверка и загрузка библиотеки/UI, если не переданы из main.lua
+local Library, EspBox, WorldBox
+if not _G.TridentSurvivalUI then
+    Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/deividcomsono/Obsidian/main/Library.lua"))()
+    local Window = Library:CreateWindow({
+        Title = "Trident Survival Visuals",
+        Footer = "ESP UI Example",
+        Center = true,
+        AutoShow = true,
+        ToggleKeybind = Enum.KeyCode.RightControl,
+    })
+    local VisualTab = Window:AddTab("Visual", "eye", "ESP Visuals Features")
+    EspBox = VisualTab:AddLeftGroupbox("ESP", "box")
+    WorldBox = VisualTab:AddRightGroupbox("World", "globe")
+else
+    Library = _G.TridentSurvivalUI.Library
+    EspBox = _G.TridentSurvivalUI.EspBox
+    WorldBox = _G.TridentSurvivalUI.WorldBox
+end
+
 local espSettings = {
     enabled = false,
     box = false,
@@ -809,3 +829,10 @@ Library:OnUnload(function()
         originalHitSoundIds[name] = nil
     end
 end)
+
+-- Save UI objects to global for potential reuse
+_G.TridentSurvivalUI = {
+    Library = Library,
+    EspBox = EspBox,
+    WorldBox = WorldBox
+}
